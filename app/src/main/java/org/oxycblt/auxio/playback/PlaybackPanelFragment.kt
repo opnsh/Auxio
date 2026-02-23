@@ -50,6 +50,11 @@ import org.oxycblt.auxio.util.systemBarInsetsCompat
 import org.oxycblt.musikr.MusicParent
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * A [ViewBindingFragment] more information about the currently playing song, alongside all
@@ -71,6 +76,7 @@ class PlaybackPanelFragment :
     private val listModel: ListViewModel by activityViewModels()
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
+    private var sleepTimerJob: Job? = null
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentPlaybackPanelBinding.inflate(inflater)
@@ -197,26 +203,27 @@ class PlaybackPanelFragment :
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
-        if (item.itemId == R.id.action_open_equalizer) {
-            // Launch the system equalizer app, if possible.
-            L.d("Launching equalizer")
-            val equalizerIntent =
-                Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
-                    // Provide audio session ID so the equalizer can show options for this app
-                    // in particular.
-                    .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, playbackModel.currentAudioSessionId)
-                    // Signal music type so that the equalizer settings are appropriate for
-                    // music playback.
-                    .putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-            try {
-                requireNotNull(equalizerLauncher) { "Equalizer panel launcher was not available" }
-                    .launch(equalizerIntent)
-            } catch (e: ActivityNotFoundException) {
-                requireContext().showToast(R.string.err_no_app)
+        when (item.itemId) {
+            R.id.action_open_equalizer -> {
+                // Launch the system equalizer app, if possible.
+                L.d("Launching equalizer")
+                val equalizerIntent =
+                    Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
+                        .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, playbackModel.currentAudioSessionId)
+                        .putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
+                try {
+                    requireNotNull(equalizerLauncher) { "Equalizer panel launcher was not available" }
+                        .launch(equalizerIntent)
+                } catch (e: ActivityNotFoundException) {
+                    requireContext().showToast(R.string.err_no_app)
+                }
+                return true
             }
-            return true
+            R.id.action_sleep_timer -> {
+                showSleepTimerDialog()
+                return true
+            }
         }
-
         return false
     }
 
@@ -307,6 +314,43 @@ class PlaybackPanelFragment :
             playbackModel.stepForward()
         } else {
             playbackModel.stepBack()
+        }
+    }
+
+    private fun showSleepTimerDialog() {
+        val options = arrayOf("Disable", "15 minutes", "30 minutes", "45 minutes", "60 minutes", "3 hours")
+        val times = arrayOf(0L, 15L, 30L, 45L, 60L, 180L)
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.sleep_timer)
+            .setItems(options) { _, which ->
+                val minutes = times[which]
+                startSleepTimer(minutes)
+            }
+            .show()
+    }
+
+    private fun startSleepTimer(minutes: Long) {
+        sleepTimerJob?.cancel()
+
+        if (minutes == 0L) {
+            requireContext().showToast(R.string.sleep_timer_disabled)
+            return
+        }
+
+        android.widget.Toast.makeText(
+            requireContext(),
+            getString(R.string.sleep_timer_set, minutes),
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+
+        sleepTimerJob = requireActivity().lifecycleScope.launch {
+            delay(minutes * 60 * 1000)
+
+            if (playbackModel.isPlaying.value == true) {
+                playbackModel.togglePlaying()
+            }
+            requireContext().showToast(R.string.sleep_timer_done)
         }
     }
 }

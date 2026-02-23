@@ -492,4 +492,11 @@
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>
     </plurals>
+
+    <!-- Sleep Timer -->
+    <string name="sleep_timer">Sleep Timer</string>
+    <string name="sleep_timer_set">Sleep timer set: %1$d min</string>
+    <string name="sleep_timer_done">Sleep timer finished. Music paused.</string>
+    <string name="sleep_timer_disabled">Sleep timer disabled</string>
+
 </resources>
