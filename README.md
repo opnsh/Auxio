@@ -1,3 +1,10 @@
+## Note About This Fork
+
+This repository is a fork of the official Auxio project. I am a big fan of Auxio, but I noticed that the official app lacks a sleep timer feature, and this feature is not planned in the original development.  
+
+To enjoy the app with a sleep timer, I created this fork for myself and for users who want this functionality. I will do my best to stay aligned with the official releases and keep this fork up to date alongside the official project.
+
+
 <p align="center"><img src="fastlane/metadata/android/en-US/images/icon.png" width="150"></p>
 <h1 align="center"><b>Auxio</b></h1>
 <h4 align="center">A simple, rational music player for Android.</h4>
